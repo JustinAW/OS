@@ -4,6 +4,9 @@
 
 #define NUM_MAGIC_BYTES 4
 
+/**
+ * Returns true if the file magic has ELF in it
+ */
 int isELF (char *bytes)
 {
     if (strstr(bytes, "ELF") != NULL) {
@@ -12,6 +15,9 @@ int isELF (char *bytes)
     return 0;
 }
 
+/**
+ * Returns true if the file magic has MZ in it
+ */
 int isPE (char *bytes)
 {
     if (strstr(bytes, "MZ") != NULL) {
@@ -22,8 +28,7 @@ int isPE (char *bytes)
 
 int main (int argc, char **argv)
 {
-    char bytes[NUM_MAGIC_BYTES];
-
+    char bytes[NUM_MAGIC_BYTES]; // buffer for magic bytes
     if (argc != 2)
     {
         printf("Error - must give me a file name\n");
@@ -32,21 +37,21 @@ int main (int argc, char **argv)
 
     printf("Checking magic on file named %s\n", argv[1]);
 
-    FILE *fp = fopen(argv[1], "r");
+    FILE *fp = fopen(argv[1], "r"); // open given file
 
-    fread(bytes, NUM_MAGIC_BYTES, 1, fp);
+    fread(bytes, NUM_MAGIC_BYTES, 1, fp); // read the magic bytes
 
     if (isELF(bytes)) {
-        printf("File is ELF\n");
+        printf("File magic is ELF\n");
     }
     else if (isPE(bytes)) {
-        printf("File is PE\n");
+        printf("File magic is PE\n");
     }
     else {
-        printf("File is neither ELF nor PE\n");
+        printf("Unrecognizable magic\n");
     }
 
-    fclose(fp);
+    fclose(fp); // close the file
 
     return 0;
 }
