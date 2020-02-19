@@ -7,28 +7,60 @@
 void run_selection (int choice)
 {
     switch (choice) {
-        case 0:
-            exit(0);
-            break;
         case 1:
             system("xdg-open https://www.youtube.com/watch?v=dQw4w9WgXcQ");
+            break;
+        case 2:
+            system("cowsay hi");
+            break;
+        case 3:
+            system("ssh jw6858@sloop.engr.ship.edu");
+            break;
+        case 4:
+            system("lsblk");
+            break;
+        case 5:
+            system("cmatrix");
             break;
         default:
             break;
     }
 }
 
-int main()
+int main(int argc, char **argv)
 {
-    int userin;
+    unsigned int userin;
+    int status;
+
     while (1) {
         printf("Super duper menu v2.0 - Enter a command #:\n");
         printf("0 - quit\n");
         printf("1 - play a cool vid\n");
-        scanf("%d", &userin);
-        run_selection(userin);
-        system("clear");
-        printf("We go agane\n");
+        printf("2 - have a cow say hi\n");
+        printf("3 - ssh into sloop\n");
+        printf("4 - list attached disk drives\n");
+        printf("5 - look like a hacker boi\n");
+        fflush(stdout);
+        scanf("%u", &userin);
+        if (userin == 0) {
+            exit(0);
+        }
+
+        pid_t pid = fork();
+        if (pid < 0) {
+            fprintf(stderr, "Fork Failed\n");
+            exit(-1);
+        } else if (pid == 0) {
+            run_selection(userin);
+            exit(0);
+        }
+        else {
+            while(1) {
+                pid_t pid1 = waitpid(-1, &status, WNOHANG);
+                if (pid1 <= 0) break;
+            }
+        }
+        printf("\n--------------------------------------------\n\n");
     }
 //    pid_t pid, pid1;
 //
