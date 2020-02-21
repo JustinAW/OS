@@ -4,7 +4,7 @@
  * worst facebook wall ever                     *
  ************************************************
  * Author: Justin Weigle                        *
- * Edited: 19 Feb 2020                          *
+ * Edited: 20 Feb 2020                          *
  ************************************************/
 #include <stdio.h>
 #include <unistd.h>
@@ -15,46 +15,30 @@
 
 int main(int argc, char **argv)
 {
-    char userin;
-    char *messg = "";
+    char choice;
+    char messg[128];
     int status;
 
-    int leng = 256;
+    int leng = 128;
     int protec = PROT_READ | PROT_WRITE;
     int flgs = MAP_SHARED | MAP_ANONYMOUS;
     void *shrmem = mmap(NULL, leng, protec, flgs, -1, 0);
 
-    memcpy(shrmem, messg, sizeof(messg));
-
     while (1) {
-        printf("Status:\n");
-        printf("%s\n", shrmem);
+        printf("Would you like to set your status? y/n?\n");
+        choice = getchar();
+        fflush(stdin);
 
-        int pid = fork();
-
-        if (pid < 0) { // error if fork returns < 0
-            fprintf(stderr, "Fork Failed\n");
-            exit(-1);
-        } else if (pid == 0) { // child
-            printf("Would you like to change your status? y/n?\n");
-            scanf("%c", &userin);
+        if (choice == 'y') {
+            printf("You chose yes\nNew status?:\n");
+            scanf("%s", &messg);
             fflush(stdin);
-
-            if (userin == 'y') {
-                printf("You chose yes\nNew status?:\n");
-                //scanf("%s", &messg);
-                fgets(messg, sizeof(shrmem), stdin);
-                memcpy(shrmem, messg, sizeof(messg));
-            } else {
-                printf("You chose no\n");
-            }
-
+            memcpy(shrmem, messg, sizeof(messg));
+            messg[0] = '\0';
+            choice = '\0';
+        } else {
+            printf("You chose no\n");
             exit(0);
-        } else { // parent
-            while(1) {
-                pid_t pid1 = waitpid(-1, &status, 0);
-                if (pid1 <= 0) break;          // ^ wait around
-            }
         }
     }
 
