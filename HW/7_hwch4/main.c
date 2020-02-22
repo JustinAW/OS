@@ -42,29 +42,29 @@ reg - the compiled regular expression pattern, and
 line - the line of the text to match. */
 void handle_file(regex_t *reg, const char* pathname)
 {
-    FILE* fp = fopen(pathname,"r");             // open the file
-    if (fp == NULL)                             // see if it failed
-    {
+    FILE* fp = fopen(pathname,"r");    // open the file
+    if (fp == NULL) {                  // see if it failed
         fprintf(stderr, "Error - could not open file %s", strerror(errno));
         exit(-1);
     }
 
-    char buff[1024];                            // create a buff to hold a line
+    char buff[1024];                   // create a buff to hold a line
 
     while (1) {
-        memset(buff, 0, sizeof(buff));          // zero out the buff
+        memset(buff, 0, sizeof(buff)); // zero out the buff
         char *ptr = fgets(buff, sizeof(buff)-1, fp);    // read the line
-        if (ptr == NULL)                        // check for end of file / error
-            break;                              // break if that happened
-
-        if (matches(reg, buff)) {               // check if the line matches the pattern
-            puts(buff);                         // if so, print it
+        if (ptr == NULL) {             // check for end of file / error
+            break;                     // break if that happened
+        }
+        if (matches(reg, buff)) {      // check if the line matches the pattern
+            puts(buff);                // if so, print it
         }
     }
 }
 
-void run(void* arg)
+void *run(void *arg)
 {
+    printf("Hello, I'm an extra thread for the extra file\n");
     regex_t reg;
 
     thread_args_t* thread_args = (thread_args_t*)arg;
@@ -74,11 +74,10 @@ void run(void* arg)
 }
 
 
-/** main() - read the files identified by the argv list, check if they match the pattern. */
+/** main() - read the files identified by the argv list,
+ * check if they match the pattern. */
 int main(int argc, char **argv)
 {
-    int i;
-
     if (argc < 3) {
         fprintf(stderr, "error - run as %s pattern file1 ... filen\n",
             argv[0]);
@@ -87,12 +86,17 @@ int main(int argc, char **argv)
     pthread_attr_t attrs;
     pthread_t pids[argc-2];
     thread_args_t args[argc - 2];
-    for (i = 2; i < argc; i++) {
-
+    for (int i = 2; i < argc; i++) {
         args[i-2].filename = argv[i];
         args[i-2].pattern = argv[1];
 
         pthread_attr_init(&attrs);
-        pthread_create(&pids[i - 2], &attrs, run, &args[i-2]);
+        int ptret = pthread_create(&pids[i-2], &attrs, run, &args[i-2]);
+        if (ptret) {
+            fprintf(stderr, "pthread_create failed: %d error code\n", ptret);
+        }
+    }
+    for (int i = 2; i < argc; i++) {
+        pthread_join(pids[i-2], NULL);
     }
 }
