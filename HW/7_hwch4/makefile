@@ -1,9 +1,9 @@
-all: main
+all: solution
 
-main: main.c
-	gcc -o main main.c -pthread
+solution: solution.c
+	gcc -o x solution.c -pthread
 
 .PHONY: clean
 
 clean:
-	rm main
+	rm x
