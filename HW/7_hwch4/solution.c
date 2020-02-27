@@ -1,3 +1,14 @@
+/********************************************
+ *              solution.c                  *
+ ********************************************
+ * Runs a regular expression search on any  *
+ * files provided as arguments using the    *
+ * pthread library to multithread the task  *
+ ********************************************
+ * Author: Justin Weigle &                  *
+ *   Dr. Briggs (orig program w/no threads) *
+ * Edited: 27 Feb 2020                      *
+ ********************************************/
 #include <stdio.h>
 #include <stdlib.h>
 #include <dirent.h>
@@ -7,6 +18,7 @@
 #include <regex.h>
 #include <pthread.h>
 
+/** for storing variables to pass to pthreads */
 typedef struct {
     const char *regexp;
     const char *dirpath;
@@ -90,13 +102,13 @@ int main(int argc, char **argv)
     int n_files = argc - 2;
     pthread_t pid[n_files];
     pthread_attr_t attr;
-    t_arg_t t_args[n_files];    // structs for arg storage
+    t_arg_t t_args[n_files];    // structs for argument storage
     int pt_attr_ret, pt_ret;    // for return vals of attr init and create
 
     for (int i = 2; i < argc; i++) {
         t_args[i-2].regexp = argv[1];
         t_args[i-2].dirpath = argv[i];
-        t_args[i-2].t_num = i-2; //track thread nums, just because
+        t_args[i-2].t_num = i-2; //track thread nums
 
         /***** init thread attrs *****/
         pt_attr_ret = pthread_attr_init(&attr);
@@ -118,4 +130,3 @@ int main(int argc, char **argv)
 
     return 0;
 }
-
