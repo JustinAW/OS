@@ -4,6 +4,12 @@
 #include <string.h>
 #include <pthread.h>
 #include <errno.h>
+#include <unistd.h>
+#include <semaphore.h>
+
+int read_count = 0;
+int diff = 0;
+int waiters = 0;
 
 #ifndef INPUT_BUFF_SIZE
 #define INPUT_BUFF_SIZE 2048
@@ -18,25 +24,75 @@ typedef enum {
     Blank_State
 } Name_Read_State;
 
+/* For input --> linked list */
 typedef struct Friend_Node {
     char *name;
     struct Friend_Node *next;
 } Friend_Node;
 
+/* For linked list management */
 struct Friend_List {
     Friend_Node *head;
     Friend_Node *tail;
     int count;
 };
 
+/* For Adam and friennnds */
+struct Tweeter {
+    char *name;
+    void *tweet;
+    void *rw_sem;
+    void *r_sem;
+};
+
 static bool split_friends (struct Friend_List *, char *);
 static void save_friend (char *, struct Friend_List **);
-static void free_friend_list(struct Friend_List *);
+static void free_friend_list (struct Friend_List *);
 static void print_names (Friend_Node *);
 
-void* friennnd (void *friend) {
-    Friend_Node *this_friend = (Friend_Node*)friend;
-    printf("%s\n", this_friend->name);
+void* friennnd (void *tweeter) {
+    struct Tweeter *friend = (struct Tweeter*)tweeter;
+    char *tweet = (char *)friend->tweet;
+    sem_t *rw_sem = (sem_t *)friend->rw_sem;
+    sem_t *r_sem = (sem_t *)friend->r_sem;
+
+    int prev_diff = diff;
+
+    while (true) {
+        sem_wait(r_sem);
+            read_count++;
+            if (read_count == 1) {
+                sem_wait(rw_sem);
+            }
+        sem_post(r_sem);
+
+        if (diff > prev_diff) {
+            prev_diff = diff;
+            printf("%s tweeted: %s\n", friend->name, tweet);
+        }
+
+        sem_wait(r_sem);
+            read_count--;
+            if (read_count == 0) {
+                sem_post(rw_sem);
+            }
+        sem_post(r_sem);
+    }
+}
+
+void* Adam (void *tweeter)
+{
+    struct Tweeter *adam = (struct Tweeter*)tweeter;
+    char *tweet_buff = (char *)adam->tweet;
+    sem_t *rw_sem = (sem_t *)adam->rw_sem;
+
+    while (true && !feof(stdin)) {
+        sem_wait(rw_sem);
+            printf("What is your tweet, Adam?\n");
+            fgets(tweet_buff, TWEET_BUFF_SIZE, stdin);
+        sem_post(rw_sem);
+        diff++;
+    }
 }
 
 int main (int argc, char **argv)
@@ -44,6 +100,10 @@ int main (int argc, char **argv)
     char input_buff[INPUT_BUFF_SIZE];
     char tweet_buff[TWEET_BUFF_SIZE];
     int friend_num = 0;
+    sem_t rw_sem;
+    sem_init(&rw_sem, 0, 1);
+    sem_t r_sem;
+    sem_init(&r_sem, 0, 1);
 
     printf("How many friends should tweet, Adam? ");
     int tn_stat = scanf("%d", &friend_num); // get friend_num
@@ -52,6 +112,7 @@ int main (int argc, char **argv)
     if (tn_stat == EOF) {
         if (!errno) {
             printf("EOF reached, exiting...\n");
+            exit(0);
         } else {
             perror("EOF reached, exiting...");
             exit(-1);
@@ -78,42 +139,60 @@ int main (int argc, char **argv)
         exit(-1);
     }
 
-    /* make a friends array */
-    Friend_Node *farr[flist.count];
+    /* make a tweeter array */
+    struct Tweeter tweeters[flist.count];
     Friend_Node *curr = flist.head;
     for (int i = 0; curr != NULL; i++) {
-        farr[i] = curr;
+        tweeters[i].name = curr->name;
+        tweeters[i].tweet = &tweet_buff;
+        tweeters[i].rw_sem = &rw_sem;
+        tweeters[i].r_sem = &r_sem;
         curr = curr->next;
     }
+
+    /* Make Tweeter struct for Adam */
+    struct Tweeter adam;
+    adam.name = "Adam";
+    adam.tweet = &tweet_buff;
+    adam.rw_sem = &rw_sem;
+    adam.r_sem = &r_sem;
 
     /* init all pthread variables */
     pthread_attr_t pthr_attr;
     pthread_attr_init(&pthr_attr);
     pthread_t tids[friend_num];
+    pthread_t tid_adam;
 
-    while (true && !feof(stdin)) {
-        printf("What is the tweet?\n");
-        fgets(tweet_buff, TWEET_BUFF_SIZE, stdin);
-        /* create threads */
-        for (int i = 0; i < friend_num; i++) {
-            if (pthread_create(&tids[i], &pthr_attr, friennnd, farr[i])) {
-                perror("Failed to create thread");
-                pthread_attr_destroy(&pthr_attr);
-                exit(-1);
-            }
+    /* create thread for Adam */
+    pthread_create(&tid_adam, &pthr_attr, Adam, &adam);
+
+    sleep(1);
+
+    /* create friend threads */
+    for (int i = 0; i < friend_num; i++) {
+        if (pthread_create(&tids[i], &pthr_attr, friennnd, &tweeters[i])) {
+            perror("Failed to create thread");
+            pthread_attr_destroy(&pthr_attr);
+            exit(-1);
         }
-        /* wait on each thread */
-        for (int i = 0; i < friend_num; i++) {
-            if (pthread_join(tids[i], NULL)) {
-                perror("Failed to join thread");
-                pthread_attr_destroy(&pthr_attr);
-                exit(-1);
-            }
+    }
+
+    /* wait on Adam's thread */
+    pthread_join(tid_adam, NULL);
+
+    /* wait on each friend thread */
+    for (int i = 0; i < friend_num; i++) {
+        if (pthread_join(tids[i], NULL)) {
+            perror("Failed to join thread");
+            pthread_attr_destroy(&pthr_attr);
+            exit(-1);
         }
     }
 
     free_friend_list(&flist);
     pthread_attr_destroy(&pthr_attr);
+    sem_destroy(&rw_sem);
+    sem_destroy(&r_sem);
     return 0;
 }
 
