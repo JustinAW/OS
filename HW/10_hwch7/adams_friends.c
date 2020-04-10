@@ -1,3 +1,8 @@
+/********************************
+ * Adam's Friends               *
+ * Hw Chapter 7                 *
+ * Justin Weigle                *
+ ********************************/
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -9,10 +14,9 @@
 
 int read_count = 0;
 int diff = 0;
-int waiters = 0;
 
 #ifndef INPUT_BUFF_SIZE
-#define INPUT_BUFF_SIZE 2048
+#define INPUT_BUFF_SIZE 2048 // for putting in friends' names
 #endif
 #ifndef TWEET_BUFF_SIZE
 #define TWEET_BUFF_SIZE 146
@@ -59,24 +63,24 @@ void* friennnd (void *tweeter) {
     int prev_diff = diff;
 
     while (true) {
-        sem_wait(r_sem);
+        sem_wait(r_sem); // lock reading
             read_count++;
-            if (read_count == 1) {
-                sem_wait(rw_sem);
+            if (read_count == 1) { // if first reader
+                sem_wait(rw_sem); // lock writing
             }
-        sem_post(r_sem);
+        sem_post(r_sem); // unlock reading
 
-        if (diff > prev_diff) {
-            prev_diff = diff;
+        if (diff > prev_diff) { // if it's a new message
+            prev_diff = diff; // remember previous msg num
             printf("%s tweeted: %s\n", friend->name, tweet);
         }
 
-        sem_wait(r_sem);
+        sem_wait(r_sem); // lock reading
             read_count--;
-            if (read_count == 0) {
-                sem_post(rw_sem);
+            if (read_count == 0) { // if last reader
+                sem_post(rw_sem); // unlock writing
             }
-        sem_post(r_sem);
+        sem_post(r_sem); // unlock reading
     }
 }
 
@@ -87,11 +91,11 @@ void* Adam (void *tweeter)
     sem_t *rw_sem = (sem_t *)adam->rw_sem;
 
     while (true && !feof(stdin)) {
-        sem_wait(rw_sem);
+        sem_wait(rw_sem); // lock writing
             printf("What is your tweet, Adam?\n");
             fgets(tweet_buff, TWEET_BUFF_SIZE, stdin);
-        sem_post(rw_sem);
-        diff++;
+            diff++; //change message number
+        sem_post(rw_sem); // unlock writing
     }
 }
 
