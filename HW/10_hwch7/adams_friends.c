@@ -78,7 +78,7 @@ void* friennnd (void *tweeter) {
 
     while (true) {
         sem_wait(r_sem); // lock reading
-            (*read_count)++;
+            (*read_count)++; // reader entering
             if (*read_count == 1) { // if first reader
                 sem_wait(rw_sem); // lock writing
             }
@@ -88,13 +88,17 @@ void* friennnd (void *tweeter) {
             prev_diff = *diff; // remember previous msg num
             printf("%s tweeted: %s\n", name, tweet);
         }
+        // make sure all readers can read before decrementing read_count
+        sleep(1);
 
         sem_wait(r_sem); // lock reading
-            (*read_count)--;
+            (*read_count)--; // reder leaving
             if (*read_count == 0) { // if last reader
                 sem_post(rw_sem); // unlock writing
             }
         sem_post(r_sem); // unlock reading
+        // wait before trying to reacquire write lock so writer gets it
+        sleep(1);
     }
 }
 
@@ -114,6 +118,8 @@ void* Adam (void *tweeter)
             fgets(tweet_buff, TWEET_BUFF_SIZE, stdin); //write
             (*diff)++; //change message number
         sem_post(rw_sem); // unlock writing
+        // wait for a microsecond to allow readers in
+        usleep(1);
     }
 }
 
