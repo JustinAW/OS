@@ -1,0 +1,5 @@
+Windows uses the LRU-approximation clock algorithm, with a combo
+of local and global page-replacement policies.
+
+Linux uses the LRU-approximation clock algorithm as well and also
+keeps two lists. The active_list and inactive_list.
