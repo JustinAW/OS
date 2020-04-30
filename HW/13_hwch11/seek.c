@@ -1,3 +1,9 @@
+/********************************
+ * Homework chapter 11          *
+ * Author: Dr. Briggs           *
+ * Completed by: Justin Weigle  *
+ ********************************/
+
 /**
     Quicksort using random I/O
 
@@ -21,13 +27,11 @@
 void read_record(FILE* fp, record_t* rec, int index)
 {
     //TODO replace with the call to fseek() that will seek to the nth record (by index)
-    // done
     int rc = fseek(fp, index, SEEK_SET);
     if (rc < 0) { perror("seek failed"); exit(-1); }
 
     //TODO replace with the call to fread() one record into the struct 
-    // done
-    rc = fread(rec, RECORD_SIZE, (size_t)1, fp);
+    rc = fread(rec, sizeof(record_t), 1, fp);
     if (rc <= 0) { perror("read failed"); exit(-1); }
 }
 
@@ -35,7 +39,12 @@ void read_record(FILE* fp, record_t* rec, int index)
 void write_record(FILE* fp, record_t* rec, int num)
 {
     //TODO seek to the proper byte address
+    int rc = fseek(fp, num, SEEK_SET);
+    if (rc < 0) { perror("seek failed"); exit(-1); }
+
     //TODO write the given record (see read_record for a hint)
+    rc = fwrite(rec, sizeof(record_t), 1, fp);
+    if (rc <= 0) { perror("write failed"); exit(-1); }
 }
 
 
@@ -46,9 +55,13 @@ void swap_records(FILE *fp, int a_idx, int b_idx)
     record_t rec_a, rec_b;
 
     //TODO read the record from a_idx into rec_a
+    read_record(fp, &rec_a, a_idx);
     //TODO read the record from b_idx into rec_b
+    read_record(fp, &rec_b, b_idx);
     //TODO write the record in rec_a to b_idx
+    write_record(fp, &rec_a, b_idx);
     //TODO write the record in rec_b to a_idx
+    write_record(fp, &rec_b, a_idx);
 }
 
 // Quicksort partition the range of data by low and high idx
@@ -86,7 +99,6 @@ void quick_sort(FILE *fp, int low, int high)
 int main(int argc, char** argv)
 {
     //TODO replace with a call to fopen the file for reading AND writing
-    // done
     FILE* fp = fopen("data.dat", "r+");
 
     // get the file's directory infomration
@@ -94,8 +106,7 @@ int main(int argc, char** argv)
     fstat(fp->_fileno, &stat_buf);
 
     //TODO divide the file's size (from stat_buf) by RECORD_SIZE to get # records
-    // done
-    int num_records = stat_buf.st_size / RECORD_SIZE;
+    int num_records = (int) stat_buf.st_size / RECORD_SIZE;
 
     printf("Sorting %d records\n", num_records);
     quick_sort(fp, 0, num_records - 1);
@@ -106,6 +117,5 @@ int main(int argc, char** argv)
     }
 
     //TODO close the file using fclose
-    // done
     fclose(fp);
 }
