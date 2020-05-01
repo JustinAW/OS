@@ -108,12 +108,12 @@ int main(int argc, char** argv)
     //TODO divide the file's size (from stat_buf) by RECORD_SIZE to get # records
     int num_records = (int) stat_buf.st_size / RECORD_SIZE;
 
-//    printf("Sorting %d records\n", num_records);
+    printf("Sorting %d records\n", num_records);
     quick_sort(fp, 0, num_records - 1);
     for (int i = 0; i < num_records; i++) {
         record_t rec;
         read_record(fp, &rec, i);
-//        printf("%d\n", rec.key);
+        printf("%d\n", rec.key);
     }
 
     //TODO close the file using fclose
