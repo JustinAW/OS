@@ -1,0 +1,2 @@
+average qsort:  0.15s
+average mmap:   0.001s

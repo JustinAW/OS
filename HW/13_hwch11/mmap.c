@@ -1,3 +1,9 @@
+/********************************
+ * Homework chapter 11          *
+ * Author: Dr. Briggs           *
+ * Completed by: Justin Weigle  *
+ ********************************/
+
 /**
     Quicksort using mmap() and low-level I/O
 
@@ -22,7 +28,7 @@
 int open_and_map(const char* file_name, record_t **records, unsigned int *num_records)
 {
     //TODO open the file_name for read and write
-    int fid = open();
+    int fid = open("data.dat", O_RDWR);
     if (fid < 0) {
         perror("Error opening file ");
         exit(-1);
@@ -30,14 +36,14 @@ int open_and_map(const char* file_name, record_t **records, unsigned int *num_re
 
     struct stat statbuf;
     //TODO get the file's status information
-    int rc = -1;
+    int rc = fstat(fid, &statbuf);
     if (rc < 0) {
         perror("Error fstat()-ing file.");
         exit(-1);
     }
 
     //TODO get the number of bytes for the file from the statbuf.
-    size_t bytes = 0;
+    size_t bytes = statbuf.st_size;
 
     *num_records = bytes / RECORD_SIZE;
 
@@ -65,6 +71,9 @@ void swap_records(record_t* records, int a_idx, int b_idx)
     record_t temp;
 
     //TODO use memcpy to swap the record at index a with index b
+    memcpy(&temp, &records[a_idx], sizeof(record_t));
+    memcpy(&records[a_idx], &records[b_idx], sizeof(record_t));
+    memcpy(&records[b_idx], &temp, sizeof(record_t));
 }
 
 int partition(record_t* records, int low, int high) {
